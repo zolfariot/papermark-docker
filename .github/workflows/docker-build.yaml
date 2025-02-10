@@ -1,0 +1,42 @@
+name: Docker Build and Push
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v4
+
+      - name: Checkout papermark.io repository
+        uses: actions/checkout@v4
+        with:
+          repository: mfts/papermark
+          ref: ${{ github.event.release.tag_name }}  # Check out the specific release tag
+          path: papermark
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/papermark:${{ github.event.release.tag_name }}
+            ghcr.io/${{ github.repository_owner }}/papermark:latest
